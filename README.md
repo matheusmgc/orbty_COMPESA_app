@@ -1,4 +1,4 @@
-# COMPESA - Monitoramento Ambiental (MVP)
+# COMPESA - APP
 
 Este projeto é uma aplicação web desenvolvida com HTML, CSS e JavaScript para visualizar dados geoespaciais de interesse ambiental. O sistema permite a visualização de satélites (Esri World Imagery) e mapas de ruas (OpenStreetMap), destacando uma área de interesse (buffer) e pontos específicos de alterações ambientais, como construções e supressões de vegetação.
 
