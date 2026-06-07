@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>COMPESA - Monitoramento Ambiental</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Inter", sans-serif;
+        overflow: hidden;
+        background: #0f172a;
+        height: 100vh;
+        color: #e2e8f0;
+      }
+
+      :root {
+        --sidebar-bg: #0f172a;
+        --sidebar-accent: #1e293b;
+        --sidebar-active: #334155;
+        --accent-color: #0ea5e9;
+        --text-light: #f8fafc;
+        --radius: 12px;
+        --radius-sm: 8px;
+        --sidebar-width: 320px;
+        --sidebar-collapse-w: 68px;
+      }
+
+      .app-container {
+        position: relative;
+        width: 100%;
+        height: 100vh;
+        display: flex;
+      }
+
+      /* Sidebar Design */
+      .sidebar {
+        position: fixed;
+        top: 16px;
+        bottom: 16px;
+        left: 16px;
+        width: var(--sidebar-width);
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        z-index: 1000;
+        border-radius: var(--radius);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        transition: width 0.3s ease, padding 0.3s ease, left 0.3s ease;
+        backdrop-filter: blur(10px);
+      }
+
+      .sidebar-collapsed {
+        width: var(--sidebar-collapse-w);
+        padding: 15px 10px;
+      }
+
+      .sidebar-toggle {
+        position: absolute;
+        top: 12px;
+        right: -15px;
+        z-index: 1001;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: #0f172a;
+        color: #fff;
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        transition: background 0.2s;
+      }
+      .sidebar-toggle:hover {
+        background: var(--sidebar-accent);
+      }
+
+      .sidebar-header {
+        text-align: center;
+        padding-bottom: 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 16px;
+        flex-shrink: 0;
+      }
+
+      .sidebar-header-logo {
+        max-width: 100%;
+        height: 48px;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto 10px;
+      }
+
+      .sidebar-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-light);
+        letter-spacing: -0.01em;
+      }
+
+      .sidebar-subtitle {
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 2px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      /* Collapsed Header state */
+      .sidebar-collapsed .sidebar-header-logo {
+        height: 32px;
+        margin-bottom: 0;
+      }
+      .sidebar-collapsed .sidebar-title,
+      .sidebar-collapsed .sidebar-subtitle,
+      .sidebar-collapsed .sidebar-body {
+        display: none;
+      }
+
+      .sidebar-body {
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 4px;
+      }
+
+      .sidebar-body::-webkit-scrollbar {
+        width: 4px;
+      }
+      .sidebar-body::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 2px;
+      }
+
+      .info-card {
+        background: var(--sidebar-accent);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: var(--radius-sm);
+        padding: 14px;
+        margin-bottom: 16px;
+      }
+
+      .info-card-title {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--accent-color);
+        margin-bottom: 10px;
+        letter-spacing: 0.05em;
+      }
+
+      .info-card-desc {
+        font-size: 12px;
+        color: #94a3b8;
+        line-height: 1.5;
+      }
+
+      /* Legend Styles */
+      .legend-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12px;
+        color: #cbd5e1;
+      }
+
+      .legend-color-point {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid #fff;
+        box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+        flex-shrink: 0;
+      }
+
+      .legend-color-polygon {
+        width: 18px;
+        height: 12px;
+        border-radius: 3px;
+        border: 2px solid #00bcff;
+        background: rgba(0, 188, 255, 0.15);
+        flex-shrink: 0;
+      }
+
+      /* Detail Table Styles */
+      .detail-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+        font-size: 12px;
+      }
+
+      .detail-table td {
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        vertical-align: top;
+      }
+
+      .detail-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      .detail-table td.label-cell {
+        color: #64748b;
+        font-weight: 600;
+        width: 40%;
+      }
+
+      .detail-table td.value-cell {
+        color: #e2e8f0;
+      }
+
+      .no-selection-msg {
+        font-style: italic;
+        color: #64748b;
+        font-size: 12px;
+        text-align: center;
+        padding: 10px 0;
+      }
+
+      .zoom-btn {
+        display: inline-block;
+        width: 100%;
+        padding: 8px 12px;
+        background: var(--accent-color);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        cursor: pointer;
+        margin-top: 12px;
+        transition: opacity 0.2s;
+        text-align: center;
+      }
+      .zoom-btn:hover {
+        opacity: 0.9;
+      }
+
+      /* Main Content & Map Area */
+      .main-content {
+        position: absolute;
+        inset: 0;
+        background: #1e293b;
+      }
+
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+
+      /* Custom Leaflet Controls */
+      .leaflet-control-zoom {
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
+      }
+      .leaflet-bar a {
+        background-color: #0f172a !important;
+        color: #fff !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+      }
+      .leaflet-bar a:hover {
+        background-color: #1e293b !important;
+      }
+
+      /* ORBTY Logo Overlay in Bottom Right */
+      .orbty-brand-logo-container {
+        position: absolute;
+        right: 16px;
+        bottom: 16px;
+        z-index: 1000;
+        pointer-events: none;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+      }
+      .orbty-brand-logo-container:hover {
+        opacity: 1;
+      }
+      .orbty-brand-logo {
+        height: 40px;
+        display: block;
+        pointer-events: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-container">
+      <aside class="sidebar" aria-label="Painel COMPESA">
+        <button type="button" class="sidebar-toggle" id="sidebar-toggle" aria-label="Recolher painel">‹</button>
+        
+        <div class="sidebar-header">
+          <img class="sidebar-header-logo" src="asset/compesa/compesa-seeklogo.png" alt="COMPESA" />
+          <h2 class="sidebar-title">COMPESA</h2>
+          <div class="sidebar-subtitle">Alterações de Uso do Solo</div>
+        </div>
+
+        <div class="sidebar-body">
+          <div class="info-card">
+            <h3 class="info-card-title">Sobre o Monitoramento</h3>
+            <p class="info-card-desc">
+              Esta ferramenta apresenta de forma simplificada a área de interesse do buffer ambiental e o mapeamento dos pontos de alterações detectados.
+            </p>
+          </div>
+
+          <div class="info-card">
+            <h3 class="info-card-title">Legenda</h3>
+            <ul class="legend-list">
+              <li class="legend-item">
+                <div class="legend-color-polygon"></div>
+                <span>Área do Buffer</span>
+              </li>
+              <li class="legend-item">
+                <div class="legend-color-point" style="background-color: #ef4444;"></div>
+                <span>Construção</span>
+              </li>
+              <li class="legend-item">
+                <div class="legend-color-point" style="background-color: #f97316;"></div>
+                <span>Supressão de Vegetação</span>
+              </li>
+              <li class="legend-item">
+                <div class="legend-color-point" style="background-color: #eab308;"></div>
+                <span>Incremento de Agricultura</span>
+              </li>
+              <li class="legend-item">
+                <div class="legend-color-point" style="background-color: #10b981;"></div>
+                <span>Regeneração de Vegetação</span>
+              </li>
+              <li class="legend-item">
+                <div class="legend-color-point" style="background-color: #6366f1;"></div>
+                <span>Outras Alterações</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="info-card" id="details-card">
+            <h3 class="info-card-title">Detalhes da Alteração</h3>
+            <div id="details-content">
+              <p class="no-selection-msg">Clique em um ponto de alteração no mapa para inspecionar os detalhes.</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <div id="map"></div>
+        <div class="orbty-brand-logo-container">
+          <a href="https://orbty.com.br" target="_blank" rel="noopener noreferrer">
+            <img class="orbty-brand-logo" src="asset/compesa/ORBTY%20logotipo%20negativo%20300.png" alt="Orbty Geosolutions" />
+          </a>
+        </div>
+      </main>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    
+    <!-- App Map Logic -->
+    <script src="map.js"></script>
+
+    <script>
+      (function () {
+        var sidebar = document.querySelector(".sidebar");
+        var sidebarToggle = document.getElementById("sidebar-toggle");
+        if (sidebar && sidebarToggle) {
+          sidebarToggle.addEventListener("click", function () {
+            var collapsed = sidebar.classList.toggle("sidebar-collapsed");
+            sidebarToggle.textContent = collapsed ? "›" : "‹";
+            sidebarToggle.setAttribute("aria-label", collapsed ? "Expandir painel" : "Recolher painel");
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>

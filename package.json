@@ -1,0 +1,19 @@
+{
+  "name": "orbty",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Orbty - Login, mapa (usuário) e painel admin",
+  "scripts": {
+    "start": "node server.js",
+    "reproject-aoi-geojson": "node tools/reproject-cetesb-corpos-to-wgs84.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.3.1",
+    "express": "^4.21.0",
+    "express-session": "^1.19.0"
+  },
+  "devDependencies": {
+    "proj4": "^2.20.8"
+  }
+}
